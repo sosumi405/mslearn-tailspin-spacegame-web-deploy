@@ -1,5 +1,5 @@
 ### YamlMime:Yaml
-#ms.openlocfilehash: a933be77d19a2017cd5d5a40835bb52a77ed0968
+#ms.openlocfilehash: caded4bf0f1a4729677f565fbfa1da2989665257
 #ms.sourcegitcommit: 82f364d63269c277208cf43051f26cc26a25f1a4
 #ms.translationtype: HT
 #ms.contentlocale: ja-JP
@@ -10,6 +10,13 @@ trigger:
 variables:
   buildConfiguration: Release
   releaseBranchName: release
+schedules:
+- cron: 0 3 * * *
+  displayName: Deploy every day at 3 A.M.
+  branches:
+    include:
+    - release
+  always: false
 stages:
 - stage: Build
   displayName: Build the web application
@@ -89,4 +96,25 @@ stages:
               azureSubscription: Resource Manager - Tailspin - Space Game
               appName: $(WebAppNameDev)
               package: $(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip
-
+- stage: Test
+  displayName: Deploy to the test environment
+  dependsOn: Dev
+  jobs:
+  - deployment: Deploy
+    pool:
+      vmImage: ubuntu-18.04
+    environment: test
+    variables:
+    - group: Release
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Azure App Service Deploy: website'
+            inputs:
+              azureSubscription: Resource Manager - Tailspin - Space Game
+              appName: $(WebAppNameTest)
+              package: $(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip
