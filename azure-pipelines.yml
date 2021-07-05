@@ -1,5 +1,5 @@
 ### YamlMime:Yaml
-#ms.openlocfilehash: caded4bf0f1a4729677f565fbfa1da2989665257
+#ms.openlocfilehash: 3adb523dc45e5bf97801d7e0aadcbcf0a39b433a
 #ms.sourcegitcommit: 82f364d63269c277208cf43051f26cc26a25f1a4
 #ms.translationtype: HT
 #ms.contentlocale: ja-JP
@@ -117,4 +117,26 @@ stages:
             inputs:
               azureSubscription: Resource Manager - Tailspin - Space Game
               appName: $(WebAppNameTest)
+              package: $(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip
+- stage: Staging
+  displayName: Deploy to the staging environment
+  dependsOn: Test
+  jobs:
+  - deployment: Deploy
+    pool:
+      vmImage: ubuntu-18.04
+    environment: staging
+    variables:
+    - group: Release
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Azure App Service Deploy: website'
+            inputs:
+              azureSubscription: Resource Manager - Tailspin - Space Game
+              appName: $(WebAppNameStaging)
               package: $(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip
